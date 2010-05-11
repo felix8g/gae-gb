@@ -1,9 +1,8 @@
 require 'sinatra'
 require 'dm-core'
-
-require 'dm-core'
-require 'dm-pagination'
-require 'dm-pagination/paginatable'
+require 'builder'
+require 'dm-validations' 
+require "dm-paginator"
 
 require 'facets/date'
 
@@ -12,8 +11,6 @@ Time::FORMAT[:only_date] = '%d.%m.%y'  # For DateTime objects
 
 # Configure DataMapper to use the App Engine datastore 
 DataMapper.setup(:default, "appengine://auto")
-
-DataMapper::Model.append_extensions DmPagination::Paginatable
 
 # Create your model class
 class Shout
@@ -30,32 +27,29 @@ class Shout
   # end
 end
 
-def pagination_links(collection)
-  html = [""]
-  if collection.page > 1
-    html << "<a href='?page=1'>&lt;&lt;</a>"
-    html << "<a href='?page=#{collection.page - 1}'>&lt;</a>"
-  end
-  (1..collection.num_pages).each do |page|
-    if page == collection.page
-      html << "<span style='font-weight: bold;'>#{ page}</span>"
-    else
-      html << "<a href='?page=#{page}'>#{page}</a>"
-    end
-  end
-  if collection.page < collection.num_pages
-    html << "<a href='?page=#{collection.page + 1}'>&gt;</a>"
-    html << "<a href='?page=#{collection.num_pages}'>&gt;&gt;</a>"
-  end
-  html.join(' ')
-end
-
-
 # Main board
 get '/' do
   # Just list all the shouts
-  @shouts = Shout.paginate(:order => [:created_at.desc], :per_page => 10, :page => params[:page])
+  #@shouts = Shout.paginate(:order => [:created_at.desc], :per_page => 10, :page => params[:page])
+  @shouts = Shout.limit_page nil, :limit => 10
+  @pager = @shouts.paginator.to_html "All", "control.erb"
   erb :index
+end
+
+get '/gb.xml' do
+  @shouts = Shout.limit_page nil, :limit => 10
+  builder do |xml|
+    xml.instruct! :xml, :version => '1.0'
+    @shouts.each do |post|
+      xml.item do
+        xml.id post.id
+        xml.user post.user
+        xml.body post.body
+        xml.reply post.reply
+        xml.pubDate post.created_at.stamp(:only_date)
+      end
+    end    
+  end
 end
 
 post '/' do

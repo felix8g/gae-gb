@@ -8,3 +8,6 @@ gem "dm-appengine"
 gem "facets"
 gem "genki-dm-datastore-adapter"
 gem "genki-dm-pagination"
+gem "builder"
+gem 'dm-validations' 
+gem 'dm-paginator'

@@ -1,13 +1,19 @@
-<% @shouts.each do |shout| %>
-<%= shout.user %> 说：<%= shout.body %> <%= shout.created_at.stamp(:only_date) %> 	<a href="/delete/<%= shout.id %>">delete</a> | 	<a href="/<%= shout.id %>">edit</a><br/>
-<% end %>
-
-<hr/>
-
-<form method='post' action='/' accept-charset="utf-8">
-	<input type='text' name='user' id='user'><br/>
-	<textarea name='body' cols='80' rows='20'></textarea>
-	<input type='submit' value='convert'>
-</form>
-
-<%=  pagination_links(@shouts) %>
+<table width="900" border="0" cellpadding="5" cellspacing="5">
+  <tr>
+    <td width="200" align="left" valign="top">
+		<form method='post' action='/' accept-charset="utf-8">
+			user:<br/><input type='text' name='user' id='user'><br/>
+			body:<br/><textarea name='body' rows='10'></textarea><br/>
+			<input type='submit' value='leave a message'>
+		</form>
+	</td>
+    <td width="600" align="left" valign="top">
+		<% @shouts.each do |shout| %>
+		<%= shout.id %> (<a href="/delete/<%= shout.id %>">delete</a> | <a href="/<%= shout.id %>">edit</a>) &nbsp;| &nbsp; <%= shout.user %> 说：<%= shout.body %> <%= shout.created_at.stamp(:only_date) %> 	
+		<br/>
+		<% end %>
+		<hr/>
+		<%= @pager  %>			
+    </td>
+  </tr>
+</table>
