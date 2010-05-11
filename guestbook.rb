@@ -9,6 +9,22 @@ require 'facets/date'
 Date::FORMAT[:only_date] = '%d.%m.%y'  # For Date objects
 Time::FORMAT[:only_date] = '%d.%m.%y'  # For DateTime objects
 
+helpers do
+
+  def protected!
+    unless authorized?
+      response['WWW-Authenticate'] = %(Basic realm="Testing HTTP Auth")
+      throw(:halt, [401, "Not authorized\n"])
+    end
+  end
+
+  def authorized?
+    @auth ||=  Rack::Auth::Basic::Request.new(request.env)
+    @auth.provided? && @auth.basic? && @auth.credentials && @auth.credentials == ['admin', 'admin']
+  end
+
+end
+
 # Configure DataMapper to use the App Engine datastore 
 DataMapper.setup(:default, "appengine://auto")
 
@@ -29,15 +45,22 @@ end
 
 # Main board
 get '/' do
+  protected!
   # Just list all the shouts
   #@shouts = Shout.paginate(:order => [:created_at.desc], :per_page => 10, :page => params[:page])
-  @shouts = Shout.limit_page nil, :limit => 10
-  @pager = @shouts.paginator.to_html "All", "control.erb"
+  @shouts = Shout.limit_page  params[:page], :limit => 10, :page => params[:page]
+  
+  page_html = ""
+  puts "#{@shouts.paginator.count} / #{@shouts.paginator.count / 10}"
+  (@shouts.paginator.count / 10 + 1).times do | page |
+    page_html += "<a href='?page=#{page+1}'>#{page+1}</a> &nbsp;"
+  end
+  @pager = page_html
   erb :index
 end
 
 get '/gb.xml' do
-  @shouts = Shout.limit_page nil, :limit => 10
+  @shouts = Shout.limit_page 1, :limit => 10
   builder do |xml|
     xml.instruct! :xml, :version => '1.0'
     @shouts.each do |post|
